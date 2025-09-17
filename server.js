@@ -69,8 +69,8 @@ const browser = await puppeteer.launch({
     '--no-zygote',
     '--single-process',
     '--disable-gpu'
-  ],
-  executablePath: '/usr/bin/google-chrome-stable'
+  ]
+  // Remove the executablePath - let Puppeteer use its bundled Chromium
 });
   
   try {

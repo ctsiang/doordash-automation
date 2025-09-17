@@ -4,7 +4,8 @@
   "description": "Automated DoorDash group order creation service",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "node node_modules/puppeteer/install.js"
   },
   "dependencies": {
     "express": "^4.18.2",
