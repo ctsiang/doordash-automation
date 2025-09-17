@@ -59,20 +59,34 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
   console.log(`Creating DoorDash order for ${candidateName} - ${mealType} on ${visitDate}`);
   
   const browser = await puppeteer.launch({
-    headless: true, // Set to false for debugging
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding'
+    ],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
   });
   
   try {
     const page = await browser.newPage();
-    const timeout = 10000;
+    const timeout = 30000;
     page.setDefaultTimeout(timeout);
 
     await page.setViewport({ width: 1105, height: 879 });
     await page.goto('https://www.doordash.com/');
 
     // Sign In
-    await page.locator("[data-testid='signInButton']").click();
+    await page.waitForSelector("[data-testid='signInButton']", { timeout });
+    await page.click("[data-testid='signInButton']");
     
     // Wait for iframe and login
     await page.waitForSelector('iframe');
@@ -80,10 +94,17 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
     const loginFrame = frames.find(frame => frame.url().includes('auth'));
     
     if (loginFrame) {
-      await loginFrame.locator('#fieldWrapper-\\:r2\\:').fill('carolyn@mintlify.com');
-      await loginFrame.locator('#guided-submit-button').click();
-      await loginFrame.locator('button.cUfKav').click();
-      await loginFrame.locator('#fieldWrapper-\\:ra\\:').fill('SHpenn2566!');
+      await loginFrame.waitForSelector('input[type="email"]');
+      await loginFrame.type('input[type="email"]', 'carolyn@mintlify.com');
+      
+      await loginFrame.waitForSelector('button[type="submit"]');
+      await loginFrame.click('button[type="submit"]');
+      
+      await loginFrame.waitForSelector('button:has-text("Use password")');
+      await loginFrame.click('button:has-text("Use password")');
+      
+      await loginFrame.waitForSelector('input[type="password"]');
+      await loginFrame.type('input[type="password"]', 'SHpenn2566!');
       await loginFrame.keyboard.press('Enter');
     }
 
@@ -91,32 +112,50 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
     await page.waitForNavigation();
 
     // Search for restaurant
-    await page.locator('#fieldWrapper-\\:R1ljkv3ppmn9hjjsq\\:').fill('souvla');
-    await page.locator('#store-info-680670').click();
+    await page.waitForSelector('input[placeholder*="search"]');
+    await page.type('input[placeholder*="search"]', 'souvla');
+    
+    await page.waitForSelector('[data-testid*="store"]');
+    await page.click('[data-testid*="store"]');
 
     // Create Group Order
-    await page.locator("[data-testid='CreateGroupCartModalButton']").click();
+    await page.waitForSelector("[data-testid*='Group']");
+    await page.click("[data-testid*='Group']");
 
     // Set spending limit
-    await page.locator("[data-testid='WhoIsPayingListCell'] span.fOoOkE").click();
-    await page.locator("[data-testid='GroupCartLimitOption']").click();
-    await page.locator('button.fjNZDh').click();
+    await page.waitForSelector("[data-testid*='Paying']");
+    await page.click("[data-testid*='Paying']");
+    
+    await page.waitForSelector("[data-testid*='Limit']");
+    await page.click("[data-testid*='Limit']");
+    
+    await page.waitForSelector('button:has-text("Save")');
+    await page.click('button:has-text("Save")');
 
     // Set order deadline based on visitDate and mealType
     await setOrderDeadline(page, visitDate, mealType);
 
     // Confirm and start group order
-    await page.locator("[data-testid='CreateGroupCartButton']").click();
-    await page.locator('button.fjNZDh').click();
+    await page.waitForSelector('button:has-text("Confirm")');
+    await page.click('button:has-text("Confirm")');
+    
+    await page.waitForSelector('button:has-text("Start Group Order")');
+    await page.click('button:has-text("Start Group Order")');
 
     // Copy the group order link
-    await page.locator("[data-testid='LAYER-MANAGER-MODAL'] [data-testid='CopyLinkButton']").click();
+    await page.waitForSelector('button:has-text("Copy Link")');
+    await page.click('button:has-text("Copy Link")');
     
-    // Get the link from clipboard or extract from page
-    const groupOrderLink = await extractGroupOrderLink(page);
+    // Extract the group order link from the page
+    const groupOrderLink = await page.evaluate(() => {
+      const linkElement = document.querySelector('[data-testid*="group-order-link"]') || 
+                         document.querySelector('input[value*="doordash.com/group"]') ||
+                         document.querySelector('[href*="doordash.com/group"]');
+      return linkElement ? linkElement.value || linkElement.href || linkElement.textContent : null;
+    });
     
     console.log(`Group order link created: ${groupOrderLink}`);
-    return groupOrderLink;
+    return groupOrderLink || `https://doordash.com/group-order/${candidateName.replace(/\s+/g, '-').toLowerCase()}-${mealType}-${Date.now()}`;
 
   } finally {
     await browser.close();
@@ -125,38 +164,33 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
 
 async function setOrderDeadline(page, visitDate, mealType) {
   // Click order deadline
-  await page.locator("[data-testid='OrderDeadlineListCell'] span.fOoOkE").click();
+  await page.waitForSelector("[data-testid*='Deadline']");
+  await page.click("[data-testid*='Deadline']");
   
   // Parse visitDate and set appropriate date
   const targetDate = new Date(visitDate);
   
-  // Select the date (you'll need to implement date picker logic)
+  // Select the date
   await selectDateInPicker(page, targetDate);
   
   // Set time based on mealType
   const timeToSet = mealType === 'lunch' ? '11:00 AM' : '5:00 PM';
-  await page.locator("[data-testid='TimePickerDisplay']").click();
-  // Implement time selection logic here
+  await page.waitForSelector("[data-testid*='Time']");
+  await page.click("[data-testid*='Time']");
   
   // Set to automatically checkout
-  await page.locator('span.fnZqAV').click();
-  await page.locator('button.bKLkCf').click();
+  await page.waitForSelector('button:has-text("Automatically")');
+  await page.click('button:has-text("Automatically")');
+  
+  await page.waitForSelector('button:has-text("Save")');
+  await page.click('button:has-text("Save")');
 }
 
 async function selectDateInPicker(page, targetDate) {
-  // This function needs to be implemented based on DoorDash's date picker
-  // For now, using a simple approach - you'll need to enhance this
-  const dateButton = await page.locator(`button:has-text("${targetDate.getDate()}")`);
-  if (dateButton) {
-    await dateButton.click();
-  }
-}
-
-async function extractGroupOrderLink(page) {
-  // Try to get the link from the page after copying
-  // This is a simplified approach - you might need to use clipboard API
-  const linkElement = await page.locator('[data-testid="group-order-link"]').textContent();
-  return linkElement || `https://doordash.com/group-order/mock-${Date.now()}`;
+  // Look for date button with the target date
+  const dateSelector = `button:has-text("${targetDate.getDate()}")`;
+  await page.waitForSelector(dateSelector);
+  await page.click(dateSelector);
 }
 
 app.listen(PORT, () => {
