@@ -72,20 +72,22 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
   
   try {
     // Launch browser with production settings
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-extensions'
-      ]
-    });
+   browser = await puppeteer.launch({
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--disable-gpu',
+    '--no-first-run',
+    '--no-zygote',
+    '--single-process',
+    '--disable-extensions'
+  ],
+  executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
+                  (process.platform === 'linux' ? '/usr/bin/google-chrome' : undefined)
+});
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
