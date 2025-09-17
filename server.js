@@ -42,6 +42,7 @@ app.post('/create-group-order', async (req, res) => {
       candidateEmail: candidateEmail,
       mealType: mealType,
       visitDate: visitDate,
+      visitorType: req.body.visitorType,
       message: `Mock group order created for ${candidateName}`
     });
 
