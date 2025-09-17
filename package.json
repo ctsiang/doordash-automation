@@ -12,10 +12,5 @@
   },
   "engines": {
     "node": "18.x"
-  },
-  "keywords": [
-    "doordash",
-    "automation",
-    "n8n",
-    "puppeteer" ]
+  }
 }

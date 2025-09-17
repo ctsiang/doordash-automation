@@ -58,23 +58,20 @@ app.post('/create-group-order', async (req, res) => {
 async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDate, mealType, budget }) {
   console.log(`Creating DoorDash order for ${candidateName} - ${mealType} on ${visitDate}`);
   
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding'
-    ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-  });
+const browser = await puppeteer.launch({
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--single-process',
+    '--disable-gpu'
+  ],
+  executablePath: '/usr/bin/google-chrome-stable'
+});
   
   try {
     const page = await browser.newPage();
