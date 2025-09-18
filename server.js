@@ -136,6 +136,10 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
     await page.setViewport({ width: 1105, height: 879 });
     await page.goto('https://www.doordash.com/');
 
+    // Capture page HTML for debugging
+    const pageHTML = await page.content();
+    console.log('Page HTML:', pageHTML);
+
     // Sign In - using your original recorded selector
     await page.waitForSelector("[data-testid='signInButton']");
     await page.click("[data-testid='signInButton']");
