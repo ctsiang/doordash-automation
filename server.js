@@ -152,7 +152,7 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
     if (loginFrame) {
       // Fill email - using original selector pattern
       await loginFrame.waitForSelector('#fieldWrapper-\\:r2\\:', { timeout: 10000 });
-      await loginFrame.type('#fieldWrapper-\\:r2\\:', 'carolyn@mintlify.com');
+      await loginFrame.type('#fieldWrapper-\\:r2\\:', process.env.DOORDASH_EMAIL);
       
       // Click continue button
       await loginFrame.waitForSelector('#guided-submit-button');
@@ -169,7 +169,7 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
       
       // Fill password - using original selector pattern
       await loginFrame.waitForSelector('#fieldWrapper-\\:ra\\:');
-      await loginFrame.type('#fieldWrapper-\\:ra\\:', 'SHpenn2566!');
+      await loginFrame.type('#fieldWrapper-\\:ra\\:', process.env.DOORDASH_PASSWORD);
       await loginFrame.keyboard.press('Enter');
     }
 
