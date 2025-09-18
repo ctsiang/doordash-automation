@@ -58,20 +58,40 @@ app.post('/create-group-order', async (req, res) => {
 async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDate, mealType, budget }) {
   console.log(`Creating DoorDash order for ${candidateName} - ${mealType} on ${visitDate}`);
   
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: '/usr/bin/google-chrome-stable',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu'
-    ]
-  });
+  let browser;
+  try {
+    // Try to use system Chrome first
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath: '/usr/bin/google-chrome-stable',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ]
+    });
+  } catch (error) {
+    console.log('System Chrome not found, falling back to bundled Chromium');
+    // Fall back to bundled Chromium
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ]
+    });
+  }
   
   try {
     const page = await browser.newPage();
