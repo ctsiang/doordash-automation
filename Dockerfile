@@ -42,9 +42,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+COPY . .
+
 COPY package*.json ./
 RUN npm install
-COPY . .
+RUN npm postinstall
 
 EXPOSE 3000
 CMD ["npm", "start"]
