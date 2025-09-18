@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const puppeteer = require('puppeteer');
 const app = express();
@@ -63,19 +64,25 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
 
   for (const chromePath of chromePaths) {
     try {
+      const launchArgs = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ];
+
+      if (process.env.PROXY_SERVER) {
+        launchArgs.push(`--proxy-server=${process.env.PROXY_SERVER}`);
+      }
+
       browser = await puppeteer.launch({
         headless: true,
         executablePath: chromePath,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ]
+        args: launchArgs
       });
       console.log(`Successfully launched Chrome at ${chromePath}`);
       break;
@@ -88,18 +95,24 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
   if (!browser) {
     try {
       console.log('System Chrome not found, falling back to bundled Chromium');
+      const fallbackArgs = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ];
+
+      if (process.env.PROXY_SERVER) {
+        fallbackArgs.push(`--proxy-server=${process.env.PROXY_SERVER}`);
+      }
+
       browser = await puppeteer.launch({
         headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ]
+        args: fallbackArgs
       });
     } catch (error) {
       throw new Error(`Failed to launch browser: ${error.message}`);
@@ -108,6 +121,15 @@ async function createDoorDashGroupOrder({ candidateName, candidateEmail, visitDa
   
   try {
     const page = await browser.newPage();
+
+    // Authenticate with proxy if credentials are provided
+    if (process.env.PROXY_USERNAME && process.env.PROXY_PASSWORD) {
+      await page.authenticate({
+        username: process.env.PROXY_USERNAME,
+        password: process.env.PROXY_PASSWORD
+      });
+    }
+
     const timeout = 30000;
     page.setDefaultTimeout(timeout);
 
